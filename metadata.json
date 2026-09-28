@@ -1,0 +1,6 @@
+{
+  "name": "Tactical Legend: Rise of Oi",
+  "description": "Cyberpunk turn-based tactical RPG featuring elite operatives, grid combat, nanite armory, squad management, cyber arcade, and storyline campaign.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
