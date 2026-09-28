@@ -82,7 +82,8 @@ data class CombatUnit(
   var specialCooldown: Int = 0,
   val avatarIcon: String,
   val themeColor: Color,
-  val isBoss: Boolean = false
+  val isBoss: Boolean = false,
+  val portraitResId: Int? = null
 ) {
   val isAlive: Boolean get() = currentHp > 0
 }
@@ -94,12 +95,23 @@ data class CombatLog(
   val color: Color = NeonCyan
 )
 
+enum class CombatDamageType {
+  NORMAL,
+  CRITICAL,
+  SHIELD_BREAK,
+  EMP_SHOCK,
+  HEAL,
+  BLADE_SLASH
+}
+
 data class FloatingDamage(
   val gridX: Int,
   val gridY: Int,
   val text: String,
   val color: Color = NeonCrimson,
   val isCrit: Boolean = false,
+  val damageType: CombatDamageType = if (isCrit) CombatDamageType.CRITICAL else CombatDamageType.NORMAL,
+  val timestamp: Long = System.currentTimeMillis(),
   val id: String = java.util.UUID.randomUUID().toString()
 )
 

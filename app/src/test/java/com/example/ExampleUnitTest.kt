@@ -45,5 +45,37 @@ class ExampleUnitTest {
     assertNotNull(currentSub)
     assertEquals("AI", currentSub?.speaker)
   }
+
+  @Test
+  fun floatingDamage_initializationAndTypes() {
+    val normalDmg = com.example.data.model.FloatingDamage(
+      gridX = 2,
+      gridY = 3,
+      text = "-35",
+      isCrit = false
+    )
+    assertEquals(com.example.data.model.CombatDamageType.NORMAL, normalDmg.damageType)
+    assertEquals("-35", normalDmg.text)
+
+    val critDmg = com.example.data.model.FloatingDamage(
+      gridX = 4,
+      gridY = 5,
+      text = "💥 CRIT -80",
+      isCrit = true
+    )
+    assertEquals(com.example.data.model.CombatDamageType.CRITICAL, critDmg.damageType)
+    assertTrue(critDmg.isCrit)
+  }
+
+  @Test
+  fun codexTab_hasExpectedCategories() {
+    val tabs = com.example.ui.components.CodexTab.entries
+    assertEquals(5, tabs.size)
+    assertTrue(tabs.contains(com.example.ui.components.CodexTab.LORE))
+    assertTrue(tabs.contains(com.example.ui.components.CodexTab.RULES))
+    assertTrue(tabs.contains(com.example.ui.components.CodexTab.OPERATIVES))
+    assertTrue(tabs.contains(com.example.ui.components.CodexTab.ENEMIES))
+    assertTrue(tabs.contains(com.example.ui.components.CodexTab.FEATURES))
+  }
 }
 

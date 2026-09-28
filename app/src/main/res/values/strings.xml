@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">Tactical Legend</string>
+    <string name="game_full_title">Tactical Legend: Rise of Oi</string>
+    <string name="game_tagline">Lead the Cyber-Rebellion. Command the Grid. Overthrow the Megacorps.</string>
+    <string name="game_description">In the neon-drenched dystopia of 2088, sovereign megacorporations rule the towering megalopolis with iron-fisted robotic enforcers. As Commander of the rogue operative cell \'Oi\', recruit elite cybernetic specialists, deploy across 10x10 isometric tactical battlefields, forge nanite weaponry, and liberate five sprawling city sectors from Commander Varrus and his lethal Apex War Titan.</string>
+    <string name="game_story_synopsis">Set in the year 2088 within the sprawling megalopolis of Neo-Kyoto, human autonomy has been fractured by monopolistic security cartels led by Arasaka Tech and Commander Varrus. Operating from the subterranean \'War Room\', the underground resistance faction known as \'Oi\' coordinates covert strikes to reclaim stolen biometric cores, free enslaved workers, and dismantle the automated surveillance grid.</string>
+    <string name="game_feature_tactical_combat">10x10 Isometric Grid Combat: Master turn-based positioning, action points, cover systems, shield mechanics, and kinetic critical strikes.</string>
+    <string name="game_feature_squad_management">Elite Operative Roster: Deploy specialized classes including Vanguards, Netrunners, Snipers, Medics, and Cyber-Samurai.</string>
+    <string name="game_feature_nanite_armory">Nanite Armory &amp; Forge: Synthesize, augment, and dismantle high-tier weaponry, energy shields, and cybernetic implants.</string>
+    <string name="game_feature_cyber_arcade">Sub-Ether Cyber Arcade: Intercept enemy telemetry and neutralize rogue combat drones in an adrenaline-pumping retro minigame.</string>
+    <string name="game_feature_boss_encounters">Epic Titan Showdowns: Formulate complex tactical maneuvers to outflank and neutralize multi-phase boss mechs and drone swarms.</string>
 </resources>

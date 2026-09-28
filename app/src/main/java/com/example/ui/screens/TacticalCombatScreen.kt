@@ -102,9 +102,21 @@ fun TacticalCombatScreen(
           ) {
             Row(
               verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(4.dp)
+              horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-              Text(text = if (isAlive) op.avatarIcon else "💀", fontSize = 12.sp)
+              if (op.portraitResId != null && isAlive) {
+                androidx.compose.foundation.Image(
+                  painter = androidx.compose.ui.res.painterResource(id = op.portraitResId),
+                  contentDescription = op.name,
+                  modifier = Modifier
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .border(0.5.dp, op.themeColor, CircleShape),
+                  contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+              } else {
+                Text(text = if (isAlive) op.avatarIcon else "💀", fontSize = 12.sp)
+              }
               Column {
                 Text(
                   text = op.name.split(" ").firstOrNull() ?: op.name,
@@ -155,7 +167,8 @@ fun TacticalCombatScreen(
           if (unit.faction == UnitFaction.PLAYER_OPERATIVE) {
             viewModel.selectUnit(unit.id)
           }
-        }
+        },
+        onDismissDamage = { id -> viewModel.dismissFloatingDamage(id) }
       )
 
       Spacer(modifier = Modifier.height(8.dp))
@@ -175,9 +188,21 @@ fun TacticalCombatScreen(
             Column(modifier = Modifier.weight(1f)) {
               Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
               ) {
-                Text(text = selectedUnit.avatarIcon, fontSize = 18.sp)
+                if (selectedUnit.portraitResId != null) {
+                  androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = selectedUnit.portraitResId),
+                    contentDescription = selectedUnit.name,
+                    modifier = Modifier
+                      .size(28.dp)
+                      .clip(CircleShape)
+                      .border(1.dp, selectedUnit.themeColor, CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                  )
+                } else {
+                  Text(text = selectedUnit.avatarIcon, fontSize = 18.sp)
+                }
                 Text(
                   text = selectedUnit.name,
                   style = MaterialTheme.typography.titleMedium,

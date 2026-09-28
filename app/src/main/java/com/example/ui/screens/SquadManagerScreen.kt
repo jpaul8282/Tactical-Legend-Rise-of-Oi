@@ -143,15 +143,23 @@ fun SquadManagerScreen(
               horizontalArrangement = Arrangement.spacedBy(10.dp),
               modifier = Modifier.weight(1f)
             ) {
+              val portraitRes = UnitPortraits.getOperativePortraitByClassName(op.heroClass, op.name)
               Box(
                 modifier = Modifier
-                  .size(46.dp)
+                  .size(48.dp)
                   .clip(CutCornerShape(4.dp))
                   .background(CyberSurfaceVariant)
                   .border(1.dp, heroCls.primaryColor, CutCornerShape(4.dp)),
                 contentAlignment = Alignment.Center
               ) {
-                Text(text = heroCls.baseIcon, fontSize = 24.sp)
+                androidx.compose.foundation.Image(
+                  painter = androidx.compose.ui.res.painterResource(id = portraitRes),
+                  contentDescription = op.name,
+                  modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CutCornerShape(4.dp)),
+                  contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
               }
 
               Column {
@@ -239,11 +247,20 @@ fun SquadManagerScreen(
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically
             ) {
+              val detailPortrait = UnitPortraits.getOperativePortraitByClassName(op.heroClass, op.name)
               Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
               ) {
-                Text(text = heroCls.baseIcon, fontSize = 28.sp)
+                androidx.compose.foundation.Image(
+                  painter = androidx.compose.ui.res.painterResource(id = detailPortrait),
+                  contentDescription = op.name,
+                  modifier = Modifier
+                    .size(54.dp)
+                    .clip(CutCornerShape(6.dp))
+                    .border(1.5.dp, heroCls.primaryColor, CutCornerShape(6.dp)),
+                  contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
                 Column {
                   Text(
                     text = op.name,

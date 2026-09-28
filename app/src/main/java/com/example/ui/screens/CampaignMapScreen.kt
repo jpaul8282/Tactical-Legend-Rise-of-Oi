@@ -35,6 +35,7 @@ fun CampaignMapScreen(
   val uiState by viewModel.uiState.collectAsState()
   val squadPower = viewModel.getSquadCombatPower()
   var briefingMission by remember { mutableStateOf<MissionEntity?>(null) }
+  var showCodex by remember { mutableStateOf(false) }
 
   Box(
     modifier = Modifier
@@ -56,7 +57,7 @@ fun CampaignMapScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
               Text(
                 text = "CAMPAIGN WAR SECTORS",
                 style = MaterialTheme.typography.titleMedium,
@@ -71,11 +72,27 @@ fun CampaignMapScreen(
               )
             }
 
-            CyberBadge(
-              text = "SQUAD PWR $squadPower",
-              color = CyberGold,
-              backgroundColor = CyberGold.copy(alpha = 0.15f)
-            )
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              CyberOutlineButton(
+                text = "CODEX",
+                icon = "📖",
+                onClick = {
+                  SoundManager.playButtonClick()
+                  showCodex = true
+                },
+                borderColor = CyberGold,
+                textColor = CyberGold,
+                testTag = "campaign_codex_button"
+              )
+              CyberBadge(
+                text = "PWR $squadPower",
+                color = CyberGold,
+                backgroundColor = CyberGold.copy(alpha = 0.15f)
+              )
+            }
           }
         }
       }
@@ -141,13 +158,44 @@ fun CampaignMapScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Intel Debrief
-            Text(
-              text = mission.intel,
-              style = MaterialTheme.typography.bodyMedium,
-              color = if (isLocked) TextMuted else TextSecondary,
-              fontSize = 12.sp
-            )
+            // Intel Debrief & Threat Intel
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              val threatPortrait = if (mission.isBossEncounter) {
+                UnitPortraits.APEX_TITAN_BOSS
+              } else if (mission.difficulty.equals("HARD", true) || mission.difficulty.equals("NIGHTMARE", true)) {
+                UnitPortraits.CYBORG_ENFORCER
+              } else {
+                UnitPortraits.DRONE_STRIKER
+              }
+
+              androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(id = threatPortrait),
+                contentDescription = "Threat Intel",
+                modifier = Modifier
+                  .size(38.dp)
+                  .clip(CutCornerShape(4.dp))
+                  .border(
+                    width = 1.dp,
+                    color = if (mission.isBossEncounter) NeonCrimson else BorderGlow,
+                    shape = CutCornerShape(4.dp)
+                  ),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+              )
+
+              Text(
+                text = mission.intel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isLocked) TextMuted else TextSecondary,
+                fontSize = 11.5.sp,
+                modifier = Modifier.weight(1f)
+              )
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -290,6 +338,10 @@ fun CampaignMapScreen(
           }
         }
       }
+    }
+
+    if (showCodex) {
+      GameCodexDialog(onDismiss = { showCodex = false })
     }
   }
 }

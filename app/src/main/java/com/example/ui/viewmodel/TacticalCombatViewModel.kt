@@ -218,7 +218,8 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             actionPoints = 2,
             maxActionPoints = 2,
             avatarIcon = heroCls.baseIcon,
-            themeColor = heroCls.primaryColor
+            themeColor = heroCls.primaryColor,
+            portraitResId = com.example.ui.components.UnitPortraits.getOperativePortrait(heroCls, op.name)
           )
         )
       }
@@ -230,7 +231,7 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
         combatUnits.add(
           CombatUnit(
             id = "boss_commander",
-            name = mission.bossName ?: "Commander Varrus",
+            name = mission.bossName ?: "Apex AI Titan Mech",
             faction = UnitFaction.ENEMY_HOSTILE,
             heroClass = null,
             maxHp = 420,
@@ -246,7 +247,8 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             gridY = 1,
             avatarIcon = "👹",
             themeColor = NeonCrimson,
-            isBoss = true
+            isBoss = true,
+            portraitResId = com.example.ui.components.UnitPortraits.APEX_TITAN_BOSS
           )
         )
         // Add escort drones & snipers
@@ -266,13 +268,14 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             gridX = 1,
             gridY = 0,
             avatarIcon = "🤖",
-            themeColor = NeonCrimsonDim
+            themeColor = NeonCrimsonDim,
+            portraitResId = com.example.ui.components.UnitPortraits.DRONE_STRIKER
           )
         )
         combatUnits.add(
           CombatUnit(
             id = "drone_02",
-            name = "Assault Gunner Bot",
+            name = "Assault Gunner Drone",
             faction = UnitFaction.ENEMY_HOSTILE,
             heroClass = null,
             maxHp = 150,
@@ -285,7 +288,8 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             gridX = 8,
             gridY = 0,
             avatarIcon = "👾",
-            themeColor = NeonCrimsonDim
+            themeColor = NeonCrimsonDim,
+            portraitResId = com.example.ui.components.UnitPortraits.DRONE_STRIKER
           )
         )
         combatUnits.add(
@@ -304,7 +308,8 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             gridX = 5,
             gridY = 1,
             avatarIcon = "🦹",
-            themeColor = NeonCrimson
+            themeColor = NeonCrimson,
+            portraitResId = com.example.ui.components.UnitPortraits.CYBORG_ENFORCER
           )
         )
       } else {
@@ -325,7 +330,8 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             gridX = 2,
             gridY = 1,
             avatarIcon = "🦹",
-            themeColor = NeonCrimson
+            themeColor = NeonCrimson,
+            portraitResId = com.example.ui.components.UnitPortraits.CYBORG_ENFORCER
           )
         )
         combatUnits.add(
@@ -344,7 +350,8 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             gridX = 7,
             gridY = 0,
             avatarIcon = "🛰️",
-            themeColor = NeonCrimsonDim
+            themeColor = NeonCrimsonDim,
+            portraitResId = com.example.ui.components.UnitPortraits.DRONE_STRIKER
           )
         )
         combatUnits.add(
@@ -363,7 +370,8 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             gridX = 4,
             gridY = 1,
             avatarIcon = "🦹",
-            themeColor = NeonCrimson
+            themeColor = NeonCrimson,
+            portraitResId = com.example.ui.components.UnitPortraits.CYBORG_ENFORCER
           )
         )
       }
@@ -671,12 +679,28 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
       } else u
     }
 
+    val isMelee = attacker.heroClass == HeroClass.SAMURAI
+    val damageType = when {
+      isCrit -> CombatDamageType.CRITICAL
+      isMelee -> CombatDamageType.BLADE_SLASH
+      defender.currentShield > 0 && remainingDmg == 0 -> CombatDamageType.SHIELD_BREAK
+      else -> CombatDamageType.NORMAL
+    }
+
+    val floatingText = when {
+      isCrit -> "💥 CRIT -$rawDmg"
+      isMelee -> "⚔️ -$rawDmg"
+      defender.currentShield > 0 && remainingDmg == 0 -> "🛡️ -$rawDmg"
+      else -> "-$rawDmg"
+    }
+
     val newFloating = FloatingDamage(
       gridX = defender.gridX,
       gridY = defender.gridY,
-      text = if (isCrit) "-$rawDmg CRIT!" else "-$rawDmg",
+      text = floatingText,
       color = if (isCrit) CyberGold else NeonCrimson,
-      isCrit = isCrit
+      isCrit = isCrit,
+      damageType = damageType
     )
 
     val logs = state.combatLogs.toMutableList()
@@ -779,7 +803,7 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             )
           } else u
         }.toMutableList()
-        floatings.add(FloatingDamage(hero.gridX, hero.gridY, "+60 SHIELD", MatrixGreen))
+        floatings.add(FloatingDamage(hero.gridX, hero.gridY, "🛡️ +60 SHIELD", MatrixGreen, damageType = CombatDamageType.HEAL))
         logs.add(0, CombatLog(message = "${hero.name} deployed Plasma Barrier (+60 Shield)!", color = MatrixGreen))
       }
       HeroClass.MEDIC -> {
@@ -787,7 +811,7 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
         // Nanite Surge: Heals allies in target radius
         updatedUnits = updatedUnits.map { u ->
           if (u.faction == UnitFaction.PLAYER_OPERATIVE && abs(u.gridX - targetX) <= 1 && abs(u.gridY - targetY) <= 1) {
-            floatings.add(FloatingDamage(u.gridX, u.gridY, "+70 HP", MatrixGreen))
+            floatings.add(FloatingDamage(u.gridX, u.gridY, "💚 +70 HP", MatrixGreen, damageType = CombatDamageType.HEAL))
             u.copy(currentHp = (u.currentHp + 70).coerceAtMost(u.maxHp))
           } else if (u.id == hero.id) {
             u.copy(specialCooldown = 3, actionPoints = u.actionPoints - 1)
@@ -807,7 +831,7 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             else if (u.id == hero.id) u.copy(specialCooldown = 3, actionPoints = u.actionPoints - 1)
             else u
           }.toMutableList()
-          floatings.add(FloatingDamage(target.gridX, target.gridY, "-$dmg OVERCHARGE!", CyberGold, isCrit = true))
+          floatings.add(FloatingDamage(target.gridX, target.gridY, "💥 -$dmg CRIT!", CyberGold, isCrit = true, damageType = CombatDamageType.CRITICAL))
           logs.add(0, CombatLog(message = "${hero.name} fired Overcharge Shot at ${target.name} for $dmg damage!", color = CyberGold))
         }
       }
@@ -816,7 +840,7 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
         // EMP Pulse: Stuns and drains shield
         updatedUnits = updatedUnits.map { u ->
           if (u.faction == UnitFaction.ENEMY_HOSTILE && abs(u.gridX - targetX) <= 1 && abs(u.gridY - targetY) <= 1) {
-            floatings.add(FloatingDamage(u.gridX, u.gridY, "EMP STUNNED!", ElectricPurple))
+            floatings.add(FloatingDamage(u.gridX, u.gridY, "⚡ EMP STUNNED!", ElectricPurple, damageType = CombatDamageType.EMP_SHOCK))
             u.copy(currentShield = 0, isStunned = true, currentHp = (u.currentHp - 25).coerceAtLeast(0))
           } else if (u.id == hero.id) {
             u.copy(specialCooldown = 3, actionPoints = u.actionPoints - 1)
@@ -836,7 +860,7 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             else if (u.id == hero.id) u.copy(specialCooldown = 3, actionPoints = u.actionPoints - 1)
             else u
           }.toMutableList()
-          floatings.add(FloatingDamage(target.gridX, target.gridY, "-$dmg BLADE DANCE!", NeonCrimson, isCrit = true))
+          floatings.add(FloatingDamage(target.gridX, target.gridY, "⚔️ -$dmg BLADE DANCE!", NeonCrimson, isCrit = true, damageType = CombatDamageType.BLADE_SLASH))
           logs.add(0, CombatLog(message = "${hero.name} unleashed Blade Dance upon ${target.name} for $dmg damage!", color = NeonCrimson))
         }
       }
@@ -948,8 +972,22 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
           if (it.id == targetPlayer.id) it.copy(currentHp = pNewHp, currentShield = pShield) else it
         }.toMutableList()
 
-        floatings.add(FloatingDamage(targetPlayer.gridX, targetPlayer.gridY, "-$dmg", NeonCrimson))
-        logs.add(0, CombatLog(message = "${enemy.name} struck ${targetPlayer.name} for $dmg damage!", color = NeonCrimson))
+        val isEnemyCrit = Random.nextFloat() < enemy.critRate
+        val enemyDmgText = if (isEnemyCrit) "💥 CRIT -$dmg" else "-$dmg"
+        val enemyDamageType = if (isEnemyCrit) CombatDamageType.CRITICAL else if (pShield > 0 && remDmg == 0) CombatDamageType.SHIELD_BREAK else CombatDamageType.NORMAL
+
+        floatings.add(
+          FloatingDamage(
+            gridX = targetPlayer.gridX,
+            gridY = targetPlayer.gridY,
+            text = enemyDmgText,
+            color = if (isEnemyCrit) CyberGold else NeonCrimson,
+            isCrit = isEnemyCrit,
+            damageType = enemyDamageType
+          )
+        )
+        val enemyCritLog = if (isEnemyCrit) " [CRITICAL STRIKE]" else ""
+        logs.add(0, CombatLog(message = "${enemy.name} struck ${targetPlayer.name} for $dmg damage$enemyCritLog!", color = if (isEnemyCrit) CyberGold else NeonCrimson))
 
         if (pNewHp <= 0) {
           logs.add(0, CombatLog(message = "⚠️ ${targetPlayer.name} was incapacitated in action!", color = NeonCrimson))
@@ -1055,5 +1093,11 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
     val logs = _gridState.value.combatLogs.toMutableList()
     logs.add(0, CombatLog(message = msg, color = color))
     _gridState.value = _gridState.value.copy(combatLogs = logs)
+  }
+
+  fun dismissFloatingDamage(id: String) {
+    _gridState.value = _gridState.value.copy(
+      floatingDamages = _gridState.value.floatingDamages.filter { it.id != id }
+    )
   }
 }

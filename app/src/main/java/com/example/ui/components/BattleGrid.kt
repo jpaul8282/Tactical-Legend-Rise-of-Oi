@@ -78,7 +78,8 @@ fun BattleGrid(
   tileSize: Dp? = null,
   onTileClick: ((Int, Int) -> Unit)? = null,
   onUnitClick: ((CombatUnit) -> Unit)? = null,
-  onEnvironmentObjectClick: ((EnvironmentObject) -> Unit)? = null
+  onEnvironmentObjectClick: ((EnvironmentObject) -> Unit)? = null,
+  onDismissDamage: ((String) -> Unit)? = null
 ) {
   val pulseTransition = rememberInfiniteTransition(label = "grid_pulse")
   val pulseAlpha by pulseTransition.animateFloat(
@@ -216,12 +217,13 @@ fun BattleGrid(
       }
     }
 
-    // Overlay Floating Damage / Combat Numbers
-    FloatingDamageGridOverlay(
+    // Overlay Floating Damage & Dynamic Particle Effects
+    AnimatedDamageOverlay(
       floatingDamages = floatingDamages,
       gridWidth = gridWidth,
       gridHeight = gridHeight,
-      showCoordinates = showCoordinates
+      showCoordinates = showCoordinates,
+      onDismissDamage = onDismissDamage
     )
   }
 }
@@ -469,7 +471,7 @@ fun CombatUnitToken(
     // Avatar Token Circle
     Box(
       modifier = Modifier
-        .size(20.dp)
+        .size(if (unit.isBoss) 23.dp else 20.dp)
         .clip(CircleShape)
         .background(
           when {
@@ -491,10 +493,21 @@ fun CombatUnitToken(
         ),
       contentAlignment = Alignment.Center
     ) {
-      Text(
-        text = if (unit.isBoss) "👑" else unit.avatarIcon,
-        fontSize = if (unit.isBoss) 11.sp else 10.sp
-      )
+      if (unit.portraitResId != null) {
+        androidx.compose.foundation.Image(
+          painter = androidx.compose.ui.res.painterResource(id = unit.portraitResId),
+          contentDescription = unit.name,
+          modifier = Modifier
+            .fillMaxSize()
+            .clip(CircleShape),
+          contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+      } else {
+        Text(
+          text = if (unit.isBoss) "👑" else unit.avatarIcon,
+          fontSize = if (unit.isBoss) 11.sp else 10.sp
+        )
+      }
     }
 
     // Action Points / Status Indicator
@@ -523,7 +536,7 @@ fun CombatUnitToken(
 }
 
 /**
- * Animated overlay for displaying floating combat numbers (damage, heal, shield, stun)
+ * Animated overlay for displaying dynamic particles and floating combat text animations
  * above specific tile coordinates on the 10x10 map.
  */
 @Composable
@@ -531,40 +544,14 @@ fun FloatingDamageGridOverlay(
   floatingDamages: List<FloatingDamage>,
   gridWidth: Int,
   gridHeight: Int,
-  showCoordinates: Boolean
+  showCoordinates: Boolean,
+  onDismissDamage: ((String) -> Unit)? = null
 ) {
-  BoxWithConstraints(
-    modifier = Modifier
-      .fillMaxSize()
-      .padding(
-        start = if (showCoordinates) 18.dp else 0.dp,
-        top = if (showCoordinates) 14.dp else 0.dp
-      )
-  ) {
-    val cellWidth = maxWidth / gridWidth
-    val cellHeight = maxHeight / gridHeight
-
-    floatingDamages.forEach { dmg ->
-      val targetX = cellWidth * dmg.gridX + (cellWidth / 2) - 30.dp
-      val targetY = cellHeight * dmg.gridY - 8.dp
-
-      Box(
-        modifier = Modifier
-          .offset(x = targetX, y = targetY)
-          .clip(CutCornerShape(2.dp))
-          .background(CyberBackground.copy(alpha = 0.85f))
-          .border(0.5.dp, dmg.color, CutCornerShape(2.dp))
-          .padding(horizontal = 4.dp, vertical = 1.dp)
-      ) {
-        Text(
-          text = dmg.text,
-          style = MaterialTheme.typography.labelSmall,
-          color = dmg.color,
-          fontFamily = FontFamily.Monospace,
-          fontWeight = FontWeight.Bold,
-          fontSize = if (dmg.isCrit) 10.sp else 9.sp
-        )
-      }
-    }
-  }
+  AnimatedDamageOverlay(
+    floatingDamages = floatingDamages,
+    gridWidth = gridWidth,
+    gridHeight = gridHeight,
+    showCoordinates = showCoordinates,
+    onDismissDamage = onDismissDamage
+  )
 }

@@ -1,6 +1,6 @@
 {
   "name": "Tactical Legend: Rise of Oi",
-  "description": "Cyberpunk turn-based tactical RPG featuring elite operatives, grid combat, nanite armory, squad management, cyber arcade, and storyline campaign.",
+  "description": "Tactical Legend: Rise of Oi is a dark cyberpunk turn-based tactical RPG set in 2088. Command the 'Oi' resistance cell across 10x10 isometric battle grids with action points, cover systems, nanite weapon forging, operative squad customization, and explosive boss battles against the corporate Apex Titan.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
