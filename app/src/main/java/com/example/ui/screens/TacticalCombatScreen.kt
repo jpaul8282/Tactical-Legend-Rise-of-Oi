@@ -213,6 +213,13 @@ fun TacticalCombatScreen(
                   text = selectedUnit.heroClass?.displayName ?: "OPERATIVE",
                   color = selectedUnit.themeColor
                 )
+                // Tactical Cover Badge
+                val operativeCover = viewModel.getSelectedUnitCover()
+                when (operativeCover) {
+                  CoverType.FULL -> CyberBadge(text = "🏰 FULL COVER (+25 DEF)", color = MatrixGreen)
+                  CoverType.HALF -> CyberBadge(text = "🛡️ HALF COVER (+14 DEF)", color = NeonCyan)
+                  CoverType.NONE -> CyberBadge(text = "⚠️ EXPOSED", color = TextMuted)
+                }
               }
 
               Spacer(modifier = Modifier.height(4.dp))
@@ -261,7 +268,68 @@ fun TacticalCombatScreen(
             }
           }
 
-          Spacer(modifier = Modifier.height(8.dp))
+          Spacer(modifier = Modifier.height(6.dp))
+
+          // Tactical Phase Intel Banners
+          if (gridState.phase == BattlePhase.ACTION_ATTACK) {
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(4.dp))
+                .background(NeonCrimson.copy(alpha = 0.15f))
+                .border(1.dp, NeonCrimson.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Text(
+                  text = "🎯 TARGETING ENEMY",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = NeonCrimson,
+                  fontWeight = FontWeight.Bold
+                )
+                Text(
+                  text = "Obstacles grant cover (🏰 Full -45% dmg, 🛡️ Half -25% dmg). Flank to bypass!",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = TextSecondary,
+                  fontSize = 9.sp
+                )
+              }
+            }
+          } else if (gridState.phase == BattlePhase.ACTION_MOVE) {
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(4.dp))
+                .background(NeonCyan.copy(alpha = 0.12f))
+                .border(1.dp, NeonCyan.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Text(
+                  text = "🏃 MOVEMENT VECTOR",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = NeonCyan,
+                  fontWeight = FontWeight.Bold
+                )
+                Text(
+                  text = "Tiles marked with 🛡️ or 🏰 provide cover against the nearest threat.",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MatrixGreen,
+                  fontSize = 9.sp
+                )
+              }
+            }
+          }
+
+          Spacer(modifier = Modifier.height(6.dp))
 
           // Tactical Action Buttons
           Row(

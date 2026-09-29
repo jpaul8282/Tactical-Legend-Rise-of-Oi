@@ -649,12 +649,26 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
       SoundManager.playLaserShoot()
     }
 
-    // Damage calculation
-    val isCrit = Random.nextFloat() < attacker.critRate
+    // Directional Cover calculation
+    val cover = CoverCalculator.calculateCover(
+      defenderX = defender.gridX,
+      defenderY = defender.gridY,
+      attackerX = attacker.gridX,
+      attackerY = attacker.gridY,
+      tiles = state.tiles,
+      envObjects = state.environmentObjects
+    )
+
+    // Damage & Critical Hit calculation
+    val effectiveCritRate = (attacker.critRate * (1f - cover.critReduction)).coerceAtLeast(0f)
+    val isCrit = Random.nextFloat() < effectiveCritRate
     val critMultiplier = if (isCrit) 2.0f else 1.0f
+
+    val flankBonus = if (cover.isFlanked) 8 else 0
     val tile = state.tiles[Pair(defender.gridX, defender.gridY)] ?: TileType.NORMAL
-    val defValue = defender.def + tile.defBonus
-    val rawDmg = max(8, ((attacker.atk * critMultiplier) - (defValue * 0.45f)).toInt())
+    val defValue = defender.def + tile.defBonus + cover.defBonus
+    val unmitigatedDmg = max(8, (((attacker.atk + flankBonus) * critMultiplier) - (defValue * 0.45f)).toInt())
+    val rawDmg = max(4, (unmitigatedDmg * (1f - cover.damageReductionPct)).toInt())
 
     // Shield absorption
     var remainingDmg = rawDmg
@@ -688,6 +702,10 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
     }
 
     val floatingText = when {
+      cover.isFlanked && isCrit -> "⚡ FLANK CRIT -$rawDmg"
+      cover.isFlanked -> "⚡ FLANK -$rawDmg"
+      cover.type == CoverType.FULL -> "🏰 FULL COVER -$rawDmg"
+      cover.type == CoverType.HALF -> "🛡️ COVER -$rawDmg"
       isCrit -> "💥 CRIT -$rawDmg"
       isMelee -> "⚔️ -$rawDmg"
       defender.currentShield > 0 && remainingDmg == 0 -> "🛡️ -$rawDmg"
@@ -698,14 +716,26 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
       gridX = defender.gridX,
       gridY = defender.gridY,
       text = floatingText,
-      color = if (isCrit) CyberGold else NeonCrimson,
+      color = if (isCrit) CyberGold else if (cover.isFlanked) NeonCyan else NeonCrimson,
       isCrit = isCrit,
       damageType = damageType
     )
 
     val logs = state.combatLogs.toMutableList()
     val critText = if (isCrit) " [CRITICAL STRIKE]" else ""
-    logs.add(0, CombatLog(message = "${attacker.name} attacked ${defender.name} for $rawDmg dmg$critText.", color = if (isCrit) CyberGold else NeonCrimson))
+    val coverLogText = when {
+      cover.isFlanked -> " [⚡ FLANKING STRIKE! Bypassed cover]"
+      cover.type == CoverType.FULL -> " [🏰 FULL COVER: ${cover.obstacleName ?: "Obstacle"} deflected fire (+${cover.defBonus} DEF)]"
+      cover.type == CoverType.HALF -> " [🛡️ HALF COVER: ${cover.obstacleName ?: "Barricade"} mitigated dmg (+${cover.defBonus} DEF)]"
+      else -> ""
+    }
+    logs.add(
+      0,
+      CombatLog(
+        message = "${attacker.name} attacked ${defender.name} for $rawDmg dmg$critText$coverLogText.",
+        color = if (isCrit) CyberGold else if (cover.isFlanked) NeonCyan else NeonCrimson
+      )
+    )
     if (!defender.isAlive || newHp <= 0) {
       logs.add(0, CombatLog(message = "Hostile ${defender.name} neutralized!", color = MatrixGreen))
     }
@@ -719,6 +749,38 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
     )
 
     checkBattleEnd()
+  }
+
+  fun getUnitCoverAgainstNearestThreat(unit: CombatUnit): CoverType {
+    val state = _gridState.value
+    return CoverCalculator.getAmbientCover(
+      x = unit.gridX,
+      y = unit.gridY,
+      unitFaction = unit.faction,
+      units = state.units,
+      tiles = state.tiles,
+      envObjects = state.environmentObjects
+    )
+  }
+
+  fun getSelectedUnitCover(): CoverType {
+    val state = _gridState.value
+    val selected = state.units.find { it.id == state.selectedUnitId } ?: return CoverType.NONE
+    return getUnitCoverAgainstNearestThreat(selected)
+  }
+
+  fun getTargetCoverFromSelectedAttacker(targetUnitId: String): CoverResult? {
+    val state = _gridState.value
+    val attacker = state.units.find { it.id == state.selectedUnitId } ?: return null
+    val target = state.units.find { it.id == targetUnitId } ?: return null
+    return CoverCalculator.calculateCover(
+      defenderX = target.gridX,
+      defenderY = target.gridY,
+      attackerX = attacker.gridX,
+      attackerY = attacker.gridY,
+      tiles = state.tiles,
+      envObjects = state.environmentObjects
+    )
   }
 
   fun prepareSpecial() {
@@ -954,7 +1016,25 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
       val newDist = abs(targetPlayer.gridX - currentEnemyX) + abs(targetPlayer.gridY - currentEnemyY)
       if (newDist <= enemy.attackRange) {
         SoundManager.playLaserShoot()
-        val dmg = max(6, (enemy.atk - (targetPlayer.def * 0.4f)).toInt())
+
+        val pCover = CoverCalculator.calculateCover(
+          defenderX = targetPlayer.gridX,
+          defenderY = targetPlayer.gridY,
+          attackerX = currentEnemyX,
+          attackerY = currentEnemyY,
+          tiles = state.tiles,
+          envObjects = state.environmentObjects
+        )
+
+        val pEffectiveCritRate = (enemy.critRate * (1f - pCover.critReduction)).coerceAtLeast(0f)
+        val isEnemyCrit = Random.nextFloat() < pEffectiveCritRate
+        val pCritMultiplier = if (isEnemyCrit) 1.8f else 1.0f
+
+        val pTile = state.tiles[Pair(targetPlayer.gridX, targetPlayer.gridY)] ?: TileType.NORMAL
+        val pDefValue = targetPlayer.def + pTile.defBonus + pCover.defBonus
+        val unmitigatedEnemyDmg = max(6, (((enemy.atk) * pCritMultiplier) - (pDefValue * 0.4f)).toInt())
+        val dmg = max(3, (unmitigatedEnemyDmg * (1f - pCover.damageReductionPct)).toInt())
+
         var remDmg = dmg
         var pShield = targetPlayer.currentShield
         if (pShield > 0) {
@@ -972,8 +1052,14 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
           if (it.id == targetPlayer.id) it.copy(currentHp = pNewHp, currentShield = pShield) else it
         }.toMutableList()
 
-        val isEnemyCrit = Random.nextFloat() < enemy.critRate
-        val enemyDmgText = if (isEnemyCrit) "💥 CRIT -$dmg" else "-$dmg"
+        val enemyDmgText = when {
+          pCover.isFlanked && isEnemyCrit -> "⚠️ FLANK CRIT -$dmg"
+          pCover.isFlanked -> "⚠️ FLANKED -$dmg"
+          pCover.type == CoverType.FULL -> "🏰 FULL COVER -$dmg"
+          pCover.type == CoverType.HALF -> "🛡️ COVER -$dmg"
+          isEnemyCrit -> "💥 CRIT -$dmg"
+          else -> "-$dmg"
+        }
         val enemyDamageType = if (isEnemyCrit) CombatDamageType.CRITICAL else if (pShield > 0 && remDmg == 0) CombatDamageType.SHIELD_BREAK else CombatDamageType.NORMAL
 
         floatings.add(
@@ -981,13 +1067,25 @@ class TacticalCombatViewModel(application: Application) : AndroidViewModel(appli
             gridX = targetPlayer.gridX,
             gridY = targetPlayer.gridY,
             text = enemyDmgText,
-            color = if (isEnemyCrit) CyberGold else NeonCrimson,
+            color = if (isEnemyCrit) CyberGold else if (pCover.type != CoverType.NONE) NeonCyan else NeonCrimson,
             isCrit = isEnemyCrit,
             damageType = enemyDamageType
           )
         )
         val enemyCritLog = if (isEnemyCrit) " [CRITICAL STRIKE]" else ""
-        logs.add(0, CombatLog(message = "${enemy.name} struck ${targetPlayer.name} for $dmg damage$enemyCritLog!", color = if (isEnemyCrit) CyberGold else NeonCrimson))
+        val pCoverLog = when {
+          pCover.isFlanked -> " [⚠️ FLANKED! Target exposed]"
+          pCover.type == CoverType.FULL -> " [🏰 FULL COVER: ${pCover.obstacleName ?: "Pillar"} absorbed fire (+${pCover.defBonus} DEF)]"
+          pCover.type == CoverType.HALF -> " [🛡️ HALF COVER: ${pCover.obstacleName ?: "Barricade"} mitigated dmg (+${pCover.defBonus} DEF)]"
+          else -> ""
+        }
+        logs.add(
+          0,
+          CombatLog(
+            message = "${enemy.name} struck ${targetPlayer.name} for $dmg damage$enemyCritLog$pCoverLog!",
+            color = if (isEnemyCrit) CyberGold else if (pCover.type != CoverType.NONE) MatrixGreen else NeonCrimson
+          )
+        )
 
         if (pNewHp <= 0) {
           logs.add(0, CombatLog(message = "⚠️ ${targetPlayer.name} was incapacitated in action!", color = NeonCrimson))

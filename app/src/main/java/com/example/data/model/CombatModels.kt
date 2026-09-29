@@ -124,3 +124,47 @@ enum class BattlePhase {
   VICTORY,
   DEFEAT
 }
+
+enum class CoverType(
+  val displayName: String,
+  val icon: String,
+  val defBonus: Int,
+  val critReduction: Float,
+  val damageReductionPct: Float,
+  val description: String
+) {
+  NONE(
+    displayName = "Exposed",
+    icon = "⚠️",
+    defBonus = 0,
+    critReduction = 0f,
+    damageReductionPct = 0f,
+    description = "No cover protection. Full damage and critical hit vulnerability."
+  ),
+  HALF(
+    displayName = "Half Cover",
+    icon = "🛡️",
+    defBonus = 14,
+    critReduction = 0.5f,
+    damageReductionPct = 0.25f,
+    description = "+14 DEF bonus, 25% damage mitigation, and -50% enemy crit chance."
+  ),
+  FULL(
+    displayName = "Full Cover",
+    icon = "🏰",
+    defBonus = 25,
+    critReduction = 1.0f,
+    damageReductionPct = 0.45f,
+    description = "+25 DEF bonus, 45% damage mitigation, and complete immunity to critical hits."
+  )
+}
+
+data class CoverResult(
+  val type: CoverType,
+  val defBonus: Int = type.defBonus,
+  val critReduction: Float = type.critReduction,
+  val damageReductionPct: Float = type.damageReductionPct,
+  val obstacleName: String? = null,
+  val isFlanked: Boolean = false,
+  val obstacleCoord: Pair<Int, Int>? = null
+)

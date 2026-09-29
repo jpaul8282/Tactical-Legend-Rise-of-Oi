@@ -37,6 +37,7 @@ enum class CodexTab(val title: String, val icon: String) {
   RULES("COMBAT GUIDE", "⚔️"),
   OPERATIVES("OPERATIVES", "👥"),
   ENEMIES("ENEMY INTEL", "🤖"),
+  SECURITY("SECURITY FILE", "🛡️"),
   FEATURES("SYSTEMS", "🔬")
 }
 
@@ -168,6 +169,7 @@ fun GameCodexDialog(
             CodexTab.RULES -> RulesSection()
             CodexTab.OPERATIVES -> OperativesSection()
             CodexTab.ENEMIES -> EnemiesSection()
+            CodexTab.SECURITY -> SecurityFileSection()
             CodexTab.FEATURES -> FeaturesSection()
           }
         }
@@ -361,6 +363,11 @@ private fun RulesSection() {
         "ACTION POINT (AP) ECONOMY",
         "Every operative begins their turn with 4 Action Points (AP). Moving costs 1 AP per tile. Standard attacks cost 3 AP. Powerful special abilities cost 4 AP. Plan your turns meticulously.",
         MatrixGreen
+      ),
+      Triple(
+        "TACTICAL COVER SYSTEM & FLANKING",
+        "Positioning units behind obstacles grants vital defensive bonuses against directional fire: Half Cover (Energy Barricades) grants +14 DEF, 25% damage mitigation, and -50% enemy crit chance. Full Cover (Structural Pillars & Titanium Bunkers) grants +25 DEF, 45% damage mitigation, and 100% crit immunity! Flank enemies around obstacles to bypass their cover and land devastating critical strikes.",
+        NeonCyan
       ),
       Triple(
         "SHIELDS & DAMAGE ABSORPTION",
@@ -691,6 +698,211 @@ private fun FeaturesSection() {
     }
   }
 }
+
+@Composable
+private fun SecurityFileSection() {
+  var firewallActive by remember { mutableStateOf(true) }
+  var quantumEncryption by remember { mutableStateOf(true) }
+  var biometricLock by remember { mutableStateOf(true) }
+  var proxyRelay by remember { mutableStateOf(true) }
+
+  LazyColumn(
+    modifier = Modifier.fillMaxSize(),
+    verticalArrangement = Arrangement.spacedBy(10.dp)
+  ) {
+    // 1. SOC Overview Banner
+    item {
+      CyberCard(
+        borderColor = NeonCyan,
+        glowColor = NeonCyan.copy(alpha = 0.5f),
+        backgroundColor = CyberSurfaceVariant.copy(alpha = 0.5f)
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Text(text = "🛡️", fontSize = 18.sp, modifier = Modifier.padding(end = 6.dp))
+              Text(
+                text = "SECURITY OPERATIONS CENTER // SOC FILE",
+                style = MaterialTheme.typography.titleMedium,
+                color = NeonCyan,
+                fontWeight = FontWeight.Bold
+              )
+            }
+            Text(
+              text = "Classified cybersecurity terminal monitoring network packet streams, intrusion vectors, and biometric security locks.",
+              style = MaterialTheme.typography.bodyMedium,
+              color = TextSecondary,
+              fontSize = 11.sp,
+              modifier = Modifier.padding(top = 2.dp)
+            )
+          }
+          CyberBadge(text = "DEFCON 1", color = NeonCyan)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // System Health Matrix
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .background(CyberBackground)
+            .padding(8.dp),
+          horizontalArrangement = Arrangement.SpaceAround
+        ) {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "FIREWALL", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontSize = 9.sp)
+            Text(text = if (firewallActive) "ACTIVE" else "OFFLINE", color = if (firewallActive) MatrixGreen else NeonCrimson, fontWeight = FontWeight.Bold, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+          }
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "ENCRYPTION", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontSize = 9.sp)
+            Text(text = if (quantumEncryption) "TLS 1.3" else "EXPOSED", color = if (quantumEncryption) NeonCyan else NeonCrimson, fontWeight = FontWeight.Bold, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+          }
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "BIO-LOCK", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontSize = 9.sp)
+            Text(text = if (biometricLock) "ARMED" else "UNLOCKED", color = if (biometricLock) CyberGold else TextMuted, fontWeight = FontWeight.Bold, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+          }
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "PROXY ROUTE", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontSize = 9.sp)
+            Text(text = if (proxyRelay) "STEALTH" else "DIRECT", color = if (proxyRelay) MatrixGreen else CyberGold, fontWeight = FontWeight.Bold, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+          }
+        }
+      }
+    }
+
+    // 2. Interactive Countermeasures Grid
+    item {
+      Text(
+        text = "ACTIVE DEFENSE PROTOCOLS",
+        style = MaterialTheme.typography.labelMedium,
+        color = CyberGold,
+        fontWeight = FontWeight.Bold
+      )
+    }
+
+    val protocols = listOf(
+      Quadruple(
+        "QUANTUM TLS NETWORK ENCRYPTION",
+        "Enforces strict HTTPS/TLS 1.3 cryptographic transport across all network nodes. Denies unencrypted cleartext transmissions, neutralizing Arasaka man-in-the-middle packet sniffers.",
+        quantumEncryption,
+        { quantumEncryption = !quantumEncryption },
+        NeonCyan
+      ),
+      Quadruple(
+        "SUB-ETHER INTRUSION DETECTION (IDS)",
+        "Monitors neural sub-ether communication channels 24/7. Automatically blacklists rogue IP ranges and automated probe drones.",
+        firewallActive,
+        { firewallActive = !firewallActive },
+        MatrixGreen
+      ),
+      Quadruple(
+        "BIOMETRIC DATA EXCLUSION RULES",
+        "Secures local SQL databases and shared preferences from unauthorized hardware extraction or cloud leakage during device transfer.",
+        biometricLock,
+        { biometricLock = !biometricLock },
+        CyberGold
+      ),
+      Quadruple(
+        "DECENTRALIZED PROXY RELAY",
+        "Obfuscates command telemetry across rotating onion nodes, shielding the War Room's physical coordinates from corporate orbital scans.",
+        proxyRelay,
+        { proxyRelay = !proxyRelay },
+        ElectricPurple
+      )
+    )
+
+    protocols.forEach { (name, desc, isEnabled, toggle, color) ->
+      item {
+        CyberCard(
+          borderColor = if (isEnabled) color.copy(alpha = 0.6f) else TextMuted.copy(alpha = 0.3f),
+          backgroundColor = CyberSurfaceVariant.copy(alpha = 0.4f),
+          modifier = Modifier.clickable {
+            SoundManager.playButtonClick()
+            toggle()
+          }
+        ) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = name,
+                style = MaterialTheme.typography.titleSmall,
+                color = if (isEnabled) color else TextMuted,
+                fontWeight = FontWeight.Bold
+              )
+              Spacer(modifier = Modifier.height(3.dp))
+              Text(
+                text = desc,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+                fontSize = 11.sp,
+                lineHeight = 15.sp
+              )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            CyberBadge(
+              text = if (isEnabled) "ENABLED" else "DISABLED",
+              color = if (isEnabled) color else TextMuted,
+              backgroundColor = if (isEnabled) color.copy(alpha = 0.2f) else CyberBackground
+            )
+          }
+        }
+      }
+    }
+
+    // 3. Security Audit & Incident Log Feed
+    item {
+      Text(
+        text = "LIVE SECURITY AUDIT LOGS",
+        style = MaterialTheme.typography.labelMedium,
+        color = MatrixGreen,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 4.dp)
+      )
+    }
+
+    item {
+      CyberCard(
+        borderColor = MatrixGreen.copy(alpha = 0.5f),
+        backgroundColor = Color.Black.copy(alpha = 0.7f)
+      ) {
+        val logs = listOf(
+          "[12:15:02] SOC DAEMON: Security manifest loaded. networkSecurityConfig initialized.",
+          "[12:15:08] TLS ENFORCER: Cleartext HTTP disabled globally (cleartextTrafficPermitted=false).",
+          "[12:15:14] BACKUP RULES: Backup exclusion applied. no_backup root protected.",
+          "[12:15:21] PROGUARD R8: Cryptographic providers and Room schemas verified.",
+          "[12:15:35] IDS TELEMETRY: Sector 7 Arasaka port probe blocked at perimeter.",
+          "[12:15:48] ALL SYSTEMS: Sub-ether integrity operating at 100% efficiency."
+        )
+        logs.forEach { logLine ->
+          Text(
+            text = logLine,
+            color = if (logLine.contains("blocked", true)) NeonCrimson else MatrixGreen,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 10.sp,
+            lineHeight = 14.sp
+          )
+          Spacer(modifier = Modifier.height(2.dp))
+        }
+      }
+    }
+  }
+}
+
+private data class Quadruple<A, B, C, D, E>(
+  val first: A,
+  val second: B,
+  val third: C,
+  val fourth: D,
+  val fifth: E
+)
 
 private data class OperativeCodexItem(
   val name: String,

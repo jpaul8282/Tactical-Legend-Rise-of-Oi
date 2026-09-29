@@ -107,6 +107,49 @@ fun BattleGrid(
     environmentObjects.associateBy { Pair(it.gridX, it.gridY) }
   }
 
+  // Cover Lookups
+  val unitCoverMap = remember(units, tiles, environmentObjects) {
+    units.filter { it.isAlive }.associate { u ->
+      Pair(u.gridX, u.gridY) to CoverCalculator.getAmbientCover(
+        x = u.gridX,
+        y = u.gridY,
+        unitFaction = u.faction,
+        units = units,
+        tiles = tiles,
+        envObjects = environmentObjects
+      )
+    }
+  }
+
+  val reachableCoverMap = remember(reachableTiles, units, tiles, environmentObjects) {
+    reachableTiles.associateWith { coord ->
+      CoverCalculator.getAmbientCover(
+        x = coord.first,
+        y = coord.second,
+        unitFaction = UnitFaction.PLAYER_OPERATIVE,
+        units = units,
+        tiles = tiles,
+        envObjects = environmentObjects
+      )
+    }
+  }
+
+  val targetCoverMap = remember(targetableTiles, selectedUnitId, units, tiles, environmentObjects) {
+    val attacker = units.find { it.id == selectedUnitId }
+    if (attacker != null) {
+      targetableTiles.associateWith { coord ->
+        CoverCalculator.calculateCover(
+          defenderX = coord.first,
+          defenderY = coord.second,
+          attackerX = attacker.gridX,
+          attackerY = attacker.gridY,
+          tiles = tiles,
+          envObjects = environmentObjects
+        )
+      }
+    } else emptyMap()
+  }
+
   val activeBorderColor = if (isPlayerTurn) NeonCyanDim else NeonCrimsonDim
 
   Box(
@@ -205,6 +248,9 @@ fun BattleGrid(
               isReachable = isReachable,
               isTargetable = isTargetable,
               isSpecialTarget = isSpecialTarget,
+              unitCover = unitCoverMap[coord] ?: CoverType.NONE,
+              reachableCover = reachableCoverMap[coord] ?: CoverType.NONE,
+              targetCover = targetCoverMap[coord],
               pulseAlpha = pulseAlpha,
               onClick = {
                 onTileClick?.invoke(x, y)
@@ -244,6 +290,9 @@ fun BattleGridTile(
   isReachable: Boolean,
   isTargetable: Boolean,
   isSpecialTarget: Boolean,
+  unitCover: CoverType = CoverType.NONE,
+  reachableCover: CoverType = CoverType.NONE,
+  targetCover: CoverResult? = null,
   pulseAlpha: Float,
   onClick: () -> Unit
 ) {
@@ -324,11 +373,12 @@ fun BattleGridTile(
     if (unit != null) {
       CombatUnitToken(
         unit = unit,
-        isSelected = isSelected
+        isSelected = isSelected,
+        coverType = unitCover
       )
     }
 
-    // 3. Tactical Reticle / Movement Waypoint Overlay
+    // 3. Tactical Reticle / Movement Waypoint Overlay with Cover Badges
     if (isTargetable && unit != null) {
       // Crosshair corner brackets
       Box(
@@ -336,22 +386,71 @@ fun BattleGridTile(
           .fillMaxSize()
           .border(1.dp, NeonCrimson.copy(alpha = 0.8f), CutCornerShape(2.dp))
       )
-    } else if (isReachable && unit == null && environmentObject?.type != EnvironmentObjectType.STRUCTURAL_PILLAR) {
-      // Animated Pulsing Movement Waypoint Marker
-      Box(
-        modifier = Modifier
-          .size(10.dp)
-          .clip(CircleShape)
-          .background(NeonCyan.copy(alpha = 0.15f * pulseAlpha + 0.10f))
-          .border(1.dp, NeonCyan.copy(alpha = pulseAlpha + 0.35f), CircleShape),
-        contentAlignment = Alignment.Center
-      ) {
+      // Cover Indicator on Target
+      if (targetCover != null) {
         Box(
           modifier = Modifier
-            .size(4.dp)
-            .clip(CircleShape)
-            .background(NeonCyan)
-        )
+            .align(Alignment.TopEnd)
+            .padding(1.dp)
+            .clip(RoundedCornerShape(2.dp))
+            .background(Color.Black.copy(alpha = 0.82f))
+            .padding(horizontal = 2.dp, vertical = 0.5.dp)
+        ) {
+          Text(
+            text = when {
+              targetCover.isFlanked -> "⚡FLANK"
+              targetCover.type == CoverType.FULL -> "🏰FULL"
+              targetCover.type == CoverType.HALF -> "🛡️HALF"
+              else -> "⚠️EXP"
+            },
+            fontSize = 6.sp,
+            color = when {
+              targetCover.isFlanked -> NeonCyan
+              targetCover.type == CoverType.FULL -> CyberAmber
+              targetCover.type == CoverType.HALF -> MatrixGreen
+              else -> TextMuted
+            },
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold
+          )
+        }
+      }
+    } else if (isReachable && unit == null && environmentObject?.type != EnvironmentObjectType.STRUCTURAL_PILLAR) {
+      // Animated Pulsing Movement Waypoint Marker with Cover Status Indicator
+      Box(
+        modifier = Modifier
+          .size(if (reachableCover != CoverType.NONE) 13.dp else 10.dp)
+          .clip(CircleShape)
+          .background(
+            when (reachableCover) {
+              CoverType.FULL -> MatrixGreen.copy(alpha = 0.22f)
+              CoverType.HALF -> NeonCyan.copy(alpha = 0.18f)
+              CoverType.NONE -> NeonCyan.copy(alpha = 0.15f * pulseAlpha + 0.10f)
+            }
+          )
+          .border(
+            1.dp,
+            when (reachableCover) {
+              CoverType.FULL -> MatrixGreen.copy(alpha = pulseAlpha + 0.35f)
+              CoverType.HALF -> ElectricBlue.copy(alpha = pulseAlpha + 0.35f)
+              CoverType.NONE -> NeonCyan.copy(alpha = pulseAlpha + 0.35f)
+            },
+            CircleShape
+          ),
+        contentAlignment = Alignment.Center
+      ) {
+        if (reachableCover == CoverType.FULL) {
+          Text(text = "🏰", fontSize = 7.sp)
+        } else if (reachableCover == CoverType.HALF) {
+          Text(text = "🛡️", fontSize = 7.sp)
+        } else {
+          Box(
+            modifier = Modifier
+              .size(4.dp)
+              .clip(CircleShape)
+              .background(NeonCyan)
+          )
+        }
       }
     }
   }
@@ -411,7 +510,8 @@ fun EnvironmentObjectView(
 @Composable
 fun CombatUnitToken(
   unit: CombatUnit,
-  isSelected: Boolean
+  isSelected: Boolean,
+  coverType: CoverType = CoverType.NONE
 ) {
   val isPlayer = unit.faction == UnitFaction.PLAYER_OPERATIVE
   val hpRatio = (unit.currentHp.toFloat() / unit.maxHp).coerceIn(0f, 1f)
@@ -468,7 +568,7 @@ fun CombatUnitToken(
       }
     }
 
-    // Avatar Token Circle
+    // Avatar Token Circle with Cover Status Badge
     Box(
       modifier = Modifier
         .size(if (unit.isBoss) 23.dp else 20.dp)
@@ -507,6 +607,24 @@ fun CombatUnitToken(
           text = if (unit.isBoss) "👑" else unit.avatarIcon,
           fontSize = if (unit.isBoss) 11.sp else 10.sp
         )
+      }
+
+      // Mini Cover Shield badge attached to unit token
+      if (coverType != CoverType.NONE) {
+        Box(
+          modifier = Modifier
+            .size(7.dp)
+            .align(Alignment.BottomEnd)
+            .clip(CircleShape)
+            .background(if (coverType == CoverType.FULL) MatrixGreen else ElectricBlue)
+            .border(0.5.dp, Color.Black, CircleShape),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = if (coverType == CoverType.FULL) "🏰" else "🛡️",
+            fontSize = 4.sp
+          )
+        }
       }
     }
 
